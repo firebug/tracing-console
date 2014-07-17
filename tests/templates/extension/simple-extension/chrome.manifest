@@ -1,2 +1,0 @@
-content  testextension  content/
-overlay  chrome://browser/content/browser.xul  chrome://testextension/content/browserOverlay.xul

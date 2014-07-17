@@ -1,4 +1,0 @@
-<?php
-header("Content-Type: ");
-?>
-//Response for test issue176 (no content type) 

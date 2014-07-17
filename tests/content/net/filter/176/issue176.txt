@@ -1,4 +1,0 @@
-<?php
-header("Content-Type: video/x-flv");
-?>
-//Response for test issue176 ('video/x-flv' content type)

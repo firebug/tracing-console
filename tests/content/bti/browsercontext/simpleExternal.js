@@ -1,1 +1,0 @@
-document.write("<p>Browser Tools Interface (external source file)</p>");

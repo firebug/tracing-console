@@ -1,5 +1,0 @@
-@supports (animation-name: test) {
-    #notExisting {
-        color: green;
-    }
-}
