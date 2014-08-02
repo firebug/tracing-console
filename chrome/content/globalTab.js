@@ -52,14 +52,14 @@ var GlobalTab = domplate(
         var topicElt = event.target;
 
         if (!this.isObserved(topicElt))
-            this.addTopic(topicElt)
+            this.addTopic(topicElt);
         else
             this.removeTopic(topicElt);
     },
 
     forEachTopicElement: function(fn)
     {
-        var topicDivs = Dom.getElementsByClass(this.panelNode, "traceOption")
+        var topicDivs = Dom.getElementsByClass(this.panelNode, "traceOption");
         for (var i=0; i<topicDivs.length; i++)
         {
             var topicElt = topicDivs[i];

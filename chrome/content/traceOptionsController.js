@@ -123,8 +123,7 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
         if (!menuitem)
             menuitem = event.target;
 
-        var label = menuitem.getAttribute("label");
-        var category = "DBG_" + label;
+        var category = menuitem.id;
         var value = Options.get(category);
         var newValue = !value;
 
@@ -154,7 +153,6 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
     this.clearOptions = function()
     {
         var optionMap = this.traceService.getTracer(prefDomain);
-        var items = [];
         for (var p in optionMap)
         {
             var m = p.indexOf("DBG_");
