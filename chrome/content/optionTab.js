@@ -14,28 +14,29 @@ function(FBTrace, Domplate, Locale, Reps, CommonBaseUI, TraceOptionsController, 
 // ********************************************************************************************* //
 // Constants
 
-var {domplate, BUTTON, FOR, TAG, UL, LI, DIV, TR, TD, INPUT} = Domplate;
+var {domplate, BUTTON, FOR, TAG, UL, LI, DIV, TR, TD, INPUT, LABEL} = Domplate;
 
 // ********************************************************************************************* //
 // Variables
 
-var timerUpdateButtons = -1;
+var timerUpdateCheckbox = -1;
 
 //********************************************************************************************** //
 var OptionTab = domplate(Tree,
 {
     rowTag:
-        TR({"class": "memberRow $member.open", $hasChildren: "$member.hasChildren",
+        TR({"class": "memberRow $member.open", $hasChildren: "$member|hasChildren",
             _repObject: "$member", level: "$member.level"},
             TD({"class": "memberLabelCell",
                 style: "padding-left: $member.indent\\px; width:1%; white-space: nowrap"},
                 DIV({"class": "memberLabel $member.type\\Label"},
                     INPUT({type: "checkbox",
-                        "onchange": "$onOptionChecked",
+                        "onchange": "$onOptionChange",
                         "onclick": "$onOptionClicked",
+                        "checked": "$member|isChecked",
                         "id": "$member.value.pref",
                     }),
-                    "$member.name"
+                    LABEL({for: "$member.value.pref"}, "$member.name")
                 )
             )
         ),
@@ -105,23 +106,34 @@ var OptionTab = domplate(Tree,
         return members;
     },
 
+    hasChildren: function(member)
+    {
+        return member.name.endsWith("/");
+    },
+
+    isChecked: function(member)
+    {
+        if (!member.name.endsWith("/"))
+            return member.name.checked;
+    },
+
     initOptionsController: function(parentNode, prefDomain)
     {
         this.optionsController = new TraceOptionsController(prefDomain,
-        function updateButton(optionName, optionValue)
+        function updateCheckbox(optionName, optionValue)
         {
             optionValue = !!optionValue;
-            var button = parentNode.ownerDocument.getElementById(optionName);
+            var checkbox = parentNode.ownerDocument.getElementById(optionName);
 
-            if (button)
-                button.setAttribute("checked", optionValue.toString());
-            else if (timerUpdateButtons === -1)
+            if (checkbox)
+                checkbox.checked = optionValue;
+            else if (timerUpdateCheckbox === -1)
             {
-                FBTrace.sysout("traceModule onPrefChange no button with name " + optionName +
+                FBTrace.sysout("traceModule onPrefChange no checkbox with name " + optionName +
                     " in parentNode; regenerate options panel", parentNode);
 
-                timerUpdateButtons = setTimeout(() => {
-                    timerUpdateButtons = -1;
+                timerUpdateCheckbox = setTimeout(() => {
+                    timerUpdateCheckbox = -1;
                     OptionTab.render(parentNode, prefDomain);
                 });
             }
@@ -139,21 +151,17 @@ var OptionTab = domplate(Tree,
         ev.stopPropagation();
     },
 
-    onOptionChecked: function(ev)
+    onOptionChange: function(ev)
     {
         var target = ev.target;
         var optionName = target.id;
-        var member =Reps.getRepObject(target);
+        var member = Reps.getRepObject(target);
         FBTrace.sysout("member = ", member);
-        FBTrace.sysout("member.value.command = ", member.value.command);
+
         if (!member.name.endsWith("/"))
-        {
             member.value.command();
-        }
         else
-        {
             executeMenuItemCommandsRecursively(member.value);
-        }
     },
 
 });

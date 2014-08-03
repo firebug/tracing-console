@@ -1,7 +1,6 @@
 /* See license.txt for terms of usage */
 
 define([
-    "fbtrace/trace",
     "fbtrace/lib/events",
     "fbtrace/lib/reps",
     "fbtrace/lib/css",
@@ -10,7 +9,7 @@ define([
     "fbtrace/lib/domplate",
     "fbtrace/lib/dom",
 ],
-function(FBTrace, Events, Reps, Css, Str, Obj, Domplate, Dom) {
+function(Events, Reps, Css, Str, Obj, Domplate, Dom) {
 with (Domplate) {
 
 // ********************************************************************************************* //
