@@ -1,18 +1,20 @@
 /* See license.txt for terms of usage */
 
 define([
-    "fbtrace/lib/locale",
+    "fbtrace/trace",
     "fbtrace/lib/domplate",
+    "fbtrace/lib/locale",
+    "fbtrace/lib/reps",
     "fbtrace/commonBaseUI",
     "fbtrace/traceOptionsController",
     "fbtrace/tree",
 ],
-function(Locale, Domplate, CommonBaseUI, TraceOptionsController, Tree) {
+function(FBTrace, Domplate, Locale, Reps, CommonBaseUI, TraceOptionsController, Tree) {
 
 // ********************************************************************************************* //
 // Constants
 
-var {domplate, FOR, TAG, UL, LI, DIV} = Domplate;
+var {domplate, BUTTON, FOR, TAG, UL, LI, DIV, TR, TD, INPUT} = Domplate;
 
 // ********************************************************************************************* //
 // Variables
@@ -22,6 +24,22 @@ var timerUpdateButtons = -1;
 //********************************************************************************************** //
 var OptionTab = domplate(Tree,
 {
+    rowTag:
+        TR({"class": "memberRow $member.open", $hasChildren: "$member.hasChildren",
+            _repObject: "$member", level: "$member.level"},
+            TD({"class": "memberLabelCell",
+                style: "padding-left: $member.indent\\px; width:1%; white-space: nowrap"},
+                DIV({"class": "memberLabel $member.type\\Label"},
+                    INPUT({type: "checkbox",
+                        "onchange": "$onOptionChecked",
+                        "onclick": "$onOptionClicked",
+                        "id": "$member.value.pref",
+                    }),
+                    "$member.name"
+                )
+            )
+        ),
+
     /*listPropTag: UL({"class": "optionList"},
         FOR("member", "$members|memberIterator",
             TAG("$member|renderMember", {"member": "$member"})
@@ -83,8 +101,7 @@ var OptionTab = domplate(Tree,
         dump("\nmemberIterator" + JSON.stringify(Array.slice(arguments)) + "\n");
         var members = [];
         for (var key in object)
-            members.push(this.createMember("dom", String(key), object[key], level));
-            //members.push({key: i, value: member[i], selected: ""});
+            members.push(this.createMember("dom", key, object[key], level));
         return members;
     },
 
@@ -117,6 +134,28 @@ var OptionTab = domplate(Tree,
         return tooltip || "";
     },
 
+    onOptionClicked: function(ev)
+    {
+        ev.stopPropagation();
+    },
+
+    onOptionChecked: function(ev)
+    {
+        var target = ev.target;
+        var optionName = target.id;
+        var member =Reps.getRepObject(target);
+        FBTrace.sysout("member = ", member);
+        FBTrace.sysout("member.value.command = ", member.value.command);
+        if (!member.name.endsWith("/"))
+        {
+            member.value.command();
+        }
+        else
+        {
+            executeMenuItemCommandsRecursively(member.value);
+        }
+    },
+
 });
 
 // ********************************************************************************************* //
@@ -144,6 +183,17 @@ function getOptionsTree(menuitems)
         }
     }
     return tree;
+}
+
+function executeMenuItemCommandsRecursively(parent)
+{
+    for (var key in parent)
+    {
+        if (key.endsWith("/"))
+            executeMenuItemCommandsRecursively(parent[key]);
+        else
+            parent[key].command();
+    }
 }
 
 // ********************************************************************************************* //

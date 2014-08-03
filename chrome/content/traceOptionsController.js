@@ -94,7 +94,7 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
                     type: "checkbox",
                     checked: prefValue,
                     pref: p,
-                    command: Obj.bind(this.userEventToPrefEvent, this)
+                    command: this.togglePref.bind(this, p)
                 });
             }
             catch (err)
@@ -117,23 +117,18 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
     };
 
     // use as an event listener on UI control
-    this.userEventToPrefEvent = function(event)
+    this.togglePref = function(pref)
     {
-        var menuitem = event.target.wrappedJSObject;
-        if (!menuitem)
-            menuitem = event.target;
-
-        var category = menuitem.id;
-        var value = Options.get(category);
+        var value = Options.get(pref);
         var newValue = !value;
 
-        Options.set(category, newValue);
+        Options.set(pref, newValue);
         prefService.savePrefFile(null);
 
         if (FBTrace.DBG_OPTIONS)
         {
             FBTrace.sysout("traceConsole.setOption: new value "+ this.prefDomain+"."+
-                category+ " = " + newValue, menuitem);
+                pref+ " = " + newValue, menuitem);
         }
     };
 
