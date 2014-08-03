@@ -2,16 +2,17 @@
 
 define([
     "fbtrace/lib/locale",
-    "fbtrace/commonBaseUI",
     "fbtrace/lib/domplate",
+    "fbtrace/commonBaseUI",
     "fbtrace/traceOptionsController",
+    "fbtrace/tree",
 ],
-function(Locale, CommonBaseUI, Domplate, TraceOptionsController) {
+function(Locale, Domplate, CommonBaseUI, TraceOptionsController, Tree) {
 
 // ********************************************************************************************* //
 // Constants
 
-var {domplate, FOR, BUTTON} = Domplate;
+var {domplate, FOR, TAG, UL, LI, DIV} = Domplate;
 
 // ********************************************************************************************* //
 // Variables
@@ -19,11 +20,24 @@ var {domplate, FOR, BUTTON} = Domplate;
 var timerUpdateButtons = -1;
 
 //********************************************************************************************** //
-
-var OptionTab = domplate(
+var OptionTab = domplate(Tree,
 {
-    tag:
-        FOR("menuitem", "$menuitems",
+    /*listPropTag: UL({"class": "optionList"},
+        FOR("member", "$members|memberIterator",
+            TAG("$member|renderMember", {"member": "$member"})
+        )
+    ),
+
+    parentTag: LI(
+        DIV({"class": "optionParent closed $member.selected"}, "$member.key"),
+        TAG("$listPropTag", {members: "$member.value"})
+    ),
+
+    leafTag: LI("$member.value.label"),
+
+
+
+        /*FOR("menuitem", "$menuitems",
             BUTTON(
                 {
                     "class": "traceOption",
@@ -34,7 +48,7 @@ var OptionTab = domplate(
                     "checked": "$menuitem.checked",
                 }, "$menuitem.label"
             )
-        ),
+        ),*/
 
     render: function(parentNode, prefDomain)
     {
@@ -44,12 +58,34 @@ var OptionTab = domplate(
             this.initOptionsController(parentNode, prefDomain);
 
         var menuitems = this.optionsController.getOptionsMenuItems();
-        this.tag.replace({menuitems: menuitems}, parentNode);
+        var members = getOptionsTree(menuitems);
+        dump("\nrender" + Array.slice(arguments).join(",") + "\n");
+        this.tag.replace({object: members}, parentNode);
 
         // If the optionsController was not initialized before calling render,
         // add the observer.
         if (!optionsControllerInitialized)
             this.optionsController.addObserver();
+    },
+
+    renderMember: function(member)
+    {
+        dump("\nrenderMember" + JSON.stringify(Array.slice(arguments)) + "\n");
+        return member.key.endsWith("/") ?
+            this.parentTag :
+            this.leafTag;
+    },
+
+    getMembers: function(object, level)
+    {
+        level = level || 0;
+
+        dump("\nmemberIterator" + JSON.stringify(Array.slice(arguments)) + "\n");
+        var members = [];
+        for (var key in object)
+            members.push(this.createMember("dom", String(key), object[key], level));
+            //members.push({key: i, value: member[i], selected: ""});
+        return members;
     },
 
     initOptionsController: function(parentNode, prefDomain)
@@ -82,6 +118,36 @@ var OptionTab = domplate(
     },
 
 });
+
+// ********************************************************************************************* //
+// Helpers
+
+function getOptionsTree(menuitems)
+{
+    var tree = {};
+    for (var menuitem of menuitems)
+    {
+        var option = menuitem.label;
+        var curIndexOf = 0;
+        var parent = tree;
+        while ((curIndexOf = option.indexOf("/", curIndexOf + 1)) !== -1)
+        {
+            var key = option.substr(0, curIndexOf + 1);
+
+            if (!parent[key])
+                parent[key] = {};
+
+            if (curIndexOf === option.lastIndexOf("/"))
+                parent[key][option] = menuitem;
+            else
+                parent = parent[key];
+        }
+    }
+    return tree;
+}
+
+// ********************************************************************************************* //
+// Registration
 
 return OptionTab;
 
