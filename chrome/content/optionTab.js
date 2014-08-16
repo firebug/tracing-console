@@ -48,8 +48,7 @@ var OptionTab = domplate(Tree,
         if (!optionsControllerInitialized)
             this.initOptionsController(parentNode, prefDomain);
 
-        var menuitems = this.optionsController.getOptionsMenuItems();
-        var members = getOptionsTree(menuitems);
+        var members = this.optionsController.getOptionsTree();
         FBTrace.sysout("render", parentNode);
         this.tag.replace({object: members}, parentNode);
 
@@ -57,14 +56,6 @@ var OptionTab = domplate(Tree,
         // add the observer.
         if (!optionsControllerInitialized)
             this.optionsController.addObserver();
-    },
-
-    renderMember: function(member)
-    {
-        dump("\nrenderMember" + JSON.stringify(Array.slice(arguments)) + "\n");
-        return member.key.endsWith("/") ?
-            this.parentTag :
-            this.leafTag;
     },
 
     getMembers: function(object, level)
@@ -180,63 +171,6 @@ var OptionTab = domplate(Tree,
     },
 
 });
-
-// ********************************************************************************************* //
-// Helpers
-
-function getOptionsTree(menuitems)
-{
-    var root = {children: [], isRoot: true};
-
-    function parentCommand()
-    {
-        var wasChecked = this.checked;
-        for (var child of this.children)
-        {
-            // Toggle the children only if the parent had the same value before
-            // the user toggled it.
-            if (child.checked === wasChecked)
-                child.command();
-        }
-    }
-
-    for (var menuitem of menuitems)
-    {
-        var option = menuitem.label;
-        var curIndexOf = 0;
-        var parent = root;
-        var childParent = parent;
-        while ((curIndexOf = option.indexOf("/", curIndexOf + 1)) !== -1)
-        {
-            var key = option.substr(0, curIndexOf + 1);
-            childParent = parent.children.find((x) => x.label === key);
-
-            if (!childParent)
-            {
-                childParent = {
-                    label: key,
-                    children: [],
-                    get checked()
-                    {
-                        let checked = this.children.every((child) => child.checked);
-                        FBTrace.sysout(this.label + " checked ? " + checked);
-                        return checked;
-                    },
-                    command: parentCommand,
-                    expanded: false,
-                    id: key,
-                    parent: parent
-                };
-                parent.children.push(childParent);
-            }
-
-            parent = childParent;
-        }
-        menuitem.parent = childParent;
-        childParent.children.push(menuitem);
-    }
-    return root;
-}
 
 // ********************************************************************************************* //
 // Registration

@@ -87,9 +87,10 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
             try
             {
                 var prefValue = Options.get(p);
-                var label = p.substr(4);
+                var key = p.substr(4);
                 items.push({
-                    label: label,
+                    label: getMenuItemLabel(key),
+                    key: key,
                     nol10n: true,
                     type: "checkbox",
                     checked: prefValue,
@@ -109,12 +110,61 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
             }
         }
 
-        items.sort(function(a, b)
-        {
-            return a.label > b.label;
-        });
-
         return items;
+    };
+
+    this.getOptionsTree = function()
+    {
+        var menuitems = this.getOptionsMenuItems();
+        var root = {children: [], isRoot: true};
+
+        function parentCommand()
+        {
+            var wasChecked = this.checked;
+            for (var child of this.children)
+            {
+                // Toggle the children only if the parent had the same value before
+                // the user toggled it.
+                if (child.checked === wasChecked)
+                    child.command();
+            }
+        }
+
+        for (var menuitem of menuitems)
+        {
+            var option = menuitem.key;
+            var curIndexOf = 0;
+            var parent = root;
+            var childParent = parent;
+            while ((curIndexOf = option.indexOf("/", curIndexOf + 1)) !== -1)
+            {
+                var key = option.substr(0, curIndexOf + 1);
+                childParent = parent.children.find((x) => x.key === key);
+
+                if (!childParent)
+                {
+                    childParent = {
+                        label: getMenuItemLabel(key),
+                        key: key,
+                        children: [],
+                        get checked()
+                        {
+                            return this.children.every((child) => child.checked);
+                        },
+                        command: parentCommand,
+                        expanded: false,
+                        id: key,
+                        parent: parent
+                    };
+                    parent.children.push(childParent);
+                }
+
+                parent = childParent;
+            }
+            menuitem.parent = childParent;
+            childParent.children.push(menuitem);
+        }
+        return root;
     };
 
     // use as an event listener on UI control
@@ -160,6 +210,14 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
         prefService.savePrefFile(null);
     };
 };
+
+// ********************************************************************************************* //
+// Helpers
+
+function getMenuItemLabel(key)
+{
+    return key.match(/([^\/]*)\/?$/)[1];
+}
 
 // ********************************************************************************************* //
 // Registration
