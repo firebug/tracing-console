@@ -76,6 +76,13 @@ var OptionTab = domplate(Tree,
         {
             return this.createMember("dom", child.label, child, level + 1);
         }, this);
+        // First put the items with children at the top, then sort alphabetically.
+        members.sort(({value: a}, {value: b}) =>
+        {
+            if (this.hasChildren(a) ^ this.hasChildren(b))
+                return this.hasChildren(b) ? 1 : -1;
+            return b.label < a.label ? 1 : -1;
+        });
         FBTrace.sysout("\nmembers = ", members);
         return members;
     },
@@ -89,7 +96,6 @@ var OptionTab = domplate(Tree,
         this.optionsController = new TraceOptionsController(prefDomain,
         function updateCheckbox(optionName, optionValue)
         {
-            FBTrace.sysout("updateCheckbox");
             optionValue = !!optionValue;
             var doc = parentNode.ownerDocument;
             var checkbox = doc.getElementById(optionName);
@@ -148,7 +154,7 @@ var OptionTab = domplate(Tree,
     hasChildren: function(object)
     {
         FBTrace.sysout("hasChildren", object);
-        return object.children && object.children.length;
+        return !!(object.children && object.children.length);
     },
 
     getItemTooltip: function(menuitem)
@@ -199,10 +205,11 @@ function getOptionsTree(menuitems)
         var option = menuitem.label;
         var curIndexOf = 0;
         var parent = root;
+        var childParent = parent;
         while ((curIndexOf = option.indexOf("/", curIndexOf + 1)) !== -1)
         {
             var key = option.substr(0, curIndexOf + 1);
-            var childParent = parent.children.find((x) => x.label === key);
+            childParent = parent.children.find((x) => x.label === key);
 
             if (!childParent)
             {
@@ -223,16 +230,10 @@ function getOptionsTree(menuitems)
                 parent.children.push(childParent);
             }
 
-            if (curIndexOf === option.lastIndexOf("/"))
-            {
-                menuitem.parent = childParent;
-                childParent.children.push(menuitem);
-            }
-            else
-            {
-                parent = childParent;
-            }
+            parent = childParent;
         }
+        menuitem.parent = childParent;
+        childParent.children.push(menuitem);
     }
     return root;
 }

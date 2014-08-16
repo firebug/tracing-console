@@ -129,7 +129,7 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
         if (FBTrace.DBG_OPTIONS)
         {
             FBTrace.sysout("traceConsole.setOption: new value "+ this.prefDomain+"."+
-                pref+ " = " + newValue, menuitem);
+                pref+ " = " + newValue);
         }
     };
 
