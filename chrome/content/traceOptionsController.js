@@ -94,6 +94,7 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
                     type: "checkbox",
                     checked: prefValue,
                     pref: p,
+                    id: p,
                     command: this.togglePref.bind(this, p)
                 });
             }

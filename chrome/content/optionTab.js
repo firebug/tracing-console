@@ -25,7 +25,7 @@ var timerUpdateCheckbox = -1;
 var OptionTab = domplate(Tree,
 {
     rowTag:
-        TR({"class": "memberRow $member.open", $hasChildren: "$member|hasChildren",
+        TR({"class": "memberRow $member.open", $hasChildren: "$member.value|hasChildren",
             _repObject: "$member", level: "$member.level"},
             TD({"class": "memberLabelCell",
                 style: "padding-left: $member.indent\\px; width:1%; white-space: nowrap"},
@@ -33,41 +33,13 @@ var OptionTab = domplate(Tree,
                     INPUT({type: "checkbox",
                         "onchange": "$onOptionChange",
                         "onclick": "$onOptionClicked",
-                        "checked": "$member|isChecked",
-                        "id": "$member.value.pref",
+                        "_checked": "$member.value.checked",
+                        "id": "$member.value.id",
                     }),
-                    LABEL({for: "$member.value.pref"}, "$member.name")
+                    LABEL({for: "$member.value.id"}, "$member.name")
                 )
             )
         ),
-
-    /*listPropTag: UL({"class": "optionList"},
-        FOR("member", "$members|memberIterator",
-            TAG("$member|renderMember", {"member": "$member"})
-        )
-    ),
-
-    parentTag: LI(
-        DIV({"class": "optionParent closed $member.selected"}, "$member.key"),
-        TAG("$listPropTag", {members: "$member.value"})
-    ),
-
-    leafTag: LI("$member.value.label"),
-
-
-
-        /*FOR("menuitem", "$menuitems",
-            BUTTON(
-                {
-                    "class": "traceOption",
-                    "id": "$menuitem.pref",
-                    "type": "",
-                    "onclick": "$menuitem.command",
-                    "title": "$menuitem|getItemTooltip",
-                    "checked": "$menuitem.checked",
-                }, "$menuitem.label"
-            )
-        ),*/
 
     render: function(parentNode, prefDomain)
     {
@@ -78,7 +50,7 @@ var OptionTab = domplate(Tree,
 
         var menuitems = this.optionsController.getOptionsMenuItems();
         var members = getOptionsTree(menuitems);
-        dump("\nrender" + Array.slice(arguments).join(",") + "\n");
+        FBTrace.sysout("render", parentNode);
         this.tag.replace({object: members}, parentNode);
 
         // If the optionsController was not initialized before calling render,
@@ -99,34 +71,47 @@ var OptionTab = domplate(Tree,
     {
         level = level || 0;
 
-        dump("\nmemberIterator" + JSON.stringify(Array.slice(arguments)) + "\n");
-        var members = [];
-        for (var key in object)
-            members.push(this.createMember("dom", key, object[key], level));
+        FBTrace.sysout("\ngetMembers" , Array.slice(arguments));
+        var members = object.children.map(function(child)
+        {
+            return this.createMember("dom", child.label, child, level + 1);
+        }, this);
+        FBTrace.sysout("\nmembers = ", members);
         return members;
-    },
-
-    hasChildren: function(member)
-    {
-        return member.name.endsWith("/");
-    },
-
-    isChecked: function(member)
-    {
-        if (!member.name.endsWith("/"))
-            return member.name.checked;
     },
 
     initOptionsController: function(parentNode, prefDomain)
     {
+        // updateCheckbox is triggered when an option (among the ones we see in "about:config")
+        // is updated.
+        // Note that when a checkbox get checked, the option is first updated, then updateCheckbox
+        // is triggered.
         this.optionsController = new TraceOptionsController(prefDomain,
         function updateCheckbox(optionName, optionValue)
         {
+            FBTrace.sysout("updateCheckbox");
             optionValue = !!optionValue;
-            var checkbox = parentNode.ownerDocument.getElementById(optionName);
+            var doc = parentNode.ownerDocument;
+            var checkbox = doc.getElementById(optionName);
 
             if (checkbox)
-                checkbox.checked = optionValue;
+            {
+                var rep = Reps.getRepObject(checkbox);
+                FBTrace.sysout("rep", rep);
+                rep.value.checked = checkbox.checked = optionValue;
+                var parentOption = rep.value.parent;
+                var parentOptionNode;
+                // Also update the parent checkboxes.
+                do
+                {
+                    parentOptionNode = doc.getElementById(parentOption.id);
+                    // parentRep.value.checked is a getter that returns true if all the children are
+                    // checked.
+                    parentOptionNode.checked = parentOption.checked;
+
+                    parentOption = parentOption.parent;
+                } while (parentOption && !parentOption.isRoot);
+            }
             else if (timerUpdateCheckbox === -1)
             {
                 FBTrace.sysout("traceModule onPrefChange no checkbox with name " + optionName +
@@ -140,6 +125,32 @@ var OptionTab = domplate(Tree,
         });
     },
 
+    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+    // Method Overrides
+
+    toggleRow: function(row)
+    {
+        var ret = Tree.toggleRow.call(this, row);
+        var member = Reps.getRepObject(row);
+        member.value.expanded = row.classList.contains("opened");
+        FBTrace.sysout("toggleRow; member.value.expanded = " + member.value.expanded);
+        return ret;
+    },
+
+    createMember: function()
+    {
+        var member = Tree.createMember.apply(this, arguments);
+        member.open = member.value.expanded ? "opened" : "";
+        FBTrace.sysout("createMember; member.open get : " + member.open);
+        return member;
+    },
+
+    hasChildren: function(object)
+    {
+        FBTrace.sysout("hasChildren", object);
+        return object.children && object.children.length;
+    },
+
     getItemTooltip: function(menuitem)
     {
         var tooltip = Locale.$STR("tracing.option." + menuitem.label + "_Description");
@@ -148,20 +159,18 @@ var OptionTab = domplate(Tree,
 
     onOptionClicked: function(ev)
     {
+        // Prevent the label or the checkbox to expand the item.
         ev.stopPropagation();
     },
 
     onOptionChange: function(ev)
     {
         var target = ev.target;
-        var optionName = target.id;
+
         var member = Reps.getRepObject(target);
         FBTrace.sysout("member = ", member);
-
-        if (!member.name.endsWith("/"))
-            member.value.command();
-        else
-            executeMenuItemCommandsRecursively(member.value);
+        member.value.command();
+        return false;
     },
 
 });
@@ -171,37 +180,61 @@ var OptionTab = domplate(Tree,
 
 function getOptionsTree(menuitems)
 {
-    var tree = {};
+    var root = {children: [], isRoot: true};
+
+    function parentCommand()
+    {
+        var wasChecked = this.checked;
+        for (var child of this.children)
+        {
+            // Toggle the children only if the parent had the same value before
+            // the user toggled it.
+            if (child.checked === wasChecked)
+                child.command();
+        }
+    }
+
     for (var menuitem of menuitems)
     {
         var option = menuitem.label;
         var curIndexOf = 0;
-        var parent = tree;
+        var parent = root;
         while ((curIndexOf = option.indexOf("/", curIndexOf + 1)) !== -1)
         {
             var key = option.substr(0, curIndexOf + 1);
+            var childParent = parent.children.find((x) => x.label === key);
 
-            if (!parent[key])
-                parent[key] = {};
+            if (!childParent)
+            {
+                childParent = {
+                    label: key,
+                    children: [],
+                    get checked()
+                    {
+                        let checked = this.children.every((child) => child.checked);
+                        FBTrace.sysout(this.label + " checked ? " + checked);
+                        return checked;
+                    },
+                    command: parentCommand,
+                    expanded: false,
+                    id: key,
+                    parent: parent
+                };
+                parent.children.push(childParent);
+            }
 
             if (curIndexOf === option.lastIndexOf("/"))
-                parent[key][option] = menuitem;
+            {
+                menuitem.parent = childParent;
+                childParent.children.push(menuitem);
+            }
             else
-                parent = parent[key];
+            {
+                parent = childParent;
+            }
         }
     }
-    return tree;
-}
-
-function executeMenuItemCommandsRecursively(parent)
-{
-    for (var key in parent)
-    {
-        if (key.endsWith("/"))
-            executeMenuItemCommandsRecursively(parent[key]);
-        else
-            parent[key].command();
-    }
+    return root;
 }
 
 // ********************************************************************************************* //
