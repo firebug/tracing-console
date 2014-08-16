@@ -14,7 +14,7 @@ function(FBTrace, Domplate, Locale, Reps, CommonBaseUI, TraceOptionsController, 
 // ********************************************************************************************* //
 // Constants
 
-var {domplate, BUTTON, FOR, TAG, UL, LI, DIV, TR, TD, INPUT, LABEL} = Domplate;
+var {domplate, DIV, TR, TD, INPUT, LABEL} = Domplate;
 
 // ********************************************************************************************* //
 // Variables
@@ -41,9 +41,12 @@ var OptionTab = domplate(Tree,
             )
         ),
 
+    openedMembers: [],
+
     render: function(parentNode, prefDomain)
     {
         var optionsControllerInitialized = !!this.optionsController;
+        var doc = parentNode.ownerDocument;
         // Customize layout of options.
         if (!optionsControllerInitialized)
             this.initOptionsController(parentNode, prefDomain);
@@ -51,6 +54,17 @@ var OptionTab = domplate(Tree,
         var members = this.optionsController.getOptionsTree();
         FBTrace.sysout("render", parentNode);
         this.tag.replace({object: members}, parentNode);
+
+        for (var openMember of this.openedMembers)
+        {
+            var openMemberId = openMember.value.id;
+            var row = doc.getElementById(openMemberId);
+            // xxxFlorent: The line below causes an error...
+            /*
+            if (openMember.open !== "opened" && row)
+                this.toggleRow(row);
+            */
+        }
 
         // If the optionsController was not initialized before calling render,
         // add the observer.
@@ -137,14 +151,18 @@ var OptionTab = domplate(Tree,
     createMember: function()
     {
         var member = Tree.createMember.apply(this, arguments);
-        member.open = member.value.expanded ? "opened" : "";
+
+        // Push the opened members in an Array so they can be expanded later
+        // xxxFlorent: Does a nicer solution exist?
+        if (member.value.expanded)
+            this.openedMembers.push(member);
+
         FBTrace.sysout("createMember; member.open get : " + member.open);
         return member;
     },
 
     hasChildren: function(object)
     {
-        FBTrace.sysout("hasChildren", object);
         return !!(object.children && object.children.length);
     },
 
