@@ -5,16 +5,15 @@ define([
     "fbtrace/lib/domplate",
     "fbtrace/lib/locale",
     "fbtrace/lib/reps",
-    "fbtrace/commonBaseUI",
     "fbtrace/traceOptionsController",
     "fbtrace/tree",
 ],
-function(FBTrace, Domplate, Locale, Reps, CommonBaseUI, TraceOptionsController, Tree) {
+function(FBTrace, Domplate, Locale, Reps, TraceOptionsController, Tree) {
 
 // ********************************************************************************************* //
 // Constants
 
-var {domplate, DIV, TR, TD, INPUT, LABEL} = Domplate;
+var {domplate, FOR, DIV, TR, TD, INPUT, LABEL, TAG} = Domplate;
 
 // ********************************************************************************************* //
 // Variables
@@ -25,10 +24,15 @@ var timerUpdateCheckbox = -1;
 var OptionTab = domplate(Tree,
 {
     rowTag:
+        FOR("mb", "$member|getMemberAndSubMembers",
+            TAG("$mb|getMemberTag", {"member": "$mb"})
+        ),
+
+    memberTag:
         TR({"class": "memberRow $member.open", $hasChildren: "$member.value|hasChildren",
-            _repObject: "$member", level: "$member.level"},
+            _repObject: "$member", level: "$member.level", "_zzzz": "$member.label", "zzzz": "$member.value.id"},
             TD({"class": "memberLabelCell",
-                style: "padding-left: $member.indent\\px; width:1%; white-space: nowrap"},
+                style: "padding-left: $member.indent\\px; width:1%; white-space: nowrap", _zzzz: "$member.value.id", "zzzz": "$member.value.id"},
                 DIV({"class": "memberLabel $member.type\\Label"},
                     INPUT({type: "checkbox",
                         "onchange": "$onOptionChange",
@@ -41,12 +45,10 @@ var OptionTab = domplate(Tree,
             )
         ),
 
-    openedMembers: [],
-
     render: function(parentNode, prefDomain)
     {
         var optionsControllerInitialized = !!this.optionsController;
-        var doc = parentNode.ownerDocument;
+        this.doc = parentNode.ownerDocument;
         // Customize layout of options.
         if (!optionsControllerInitialized)
             this.initOptionsController(parentNode, prefDomain);
@@ -54,17 +56,6 @@ var OptionTab = domplate(Tree,
         var members = this.optionsController.getOptionsTree();
         FBTrace.sysout("render", parentNode);
         this.tag.replace({object: members}, parentNode);
-
-        for (var openMember of this.openedMembers)
-        {
-            var openMemberId = openMember.value.id;
-            var row = doc.getElementById(openMemberId);
-            // xxxFlorent: The line below causes an error...
-            /*
-            if (openMember.open !== "opened" && row)
-                this.toggleRow(row);
-            */
-        }
 
         // If the optionsController was not initialized before calling render,
         // add the observer.
@@ -89,7 +80,26 @@ var OptionTab = domplate(Tree,
             return b.label < a.label ? 1 : -1;
         });
         FBTrace.sysout("\nmembers = ", members);
+
         return members;
+    },
+
+    getMemberTag: function()
+    {
+        return this.memberTag;
+    },
+
+    getMemberAndSubMembers: function(member)
+    {
+        var res = [member];
+        FBTrace.sysout("getMemberAndSubMembers", member);
+        if (member.value.expanded && this.hasChildren(member.value))
+        {
+            res = res.concat(this.getMembers(member.value, member.level + 1));
+            member.open = "opened";
+        }
+        FBTrace.sysout("getMemberAndSubMembers; result", res);
+        return res;
     },
 
     initOptionsController: function(parentNode, prefDomain)
@@ -146,19 +156,6 @@ var OptionTab = domplate(Tree,
         member.value.expanded = row.classList.contains("opened");
         FBTrace.sysout("toggleRow; member.value.expanded = " + member.value.expanded);
         return ret;
-    },
-
-    createMember: function()
-    {
-        var member = Tree.createMember.apply(this, arguments);
-
-        // Push the opened members in an Array so they can be expanded later
-        // xxxFlorent: Does a nicer solution exist?
-        if (member.value.expanded)
-            this.openedMembers.push(member);
-
-        FBTrace.sysout("createMember; member.open get : " + member.open);
-        return member;
     },
 
     hasChildren: function(object)
