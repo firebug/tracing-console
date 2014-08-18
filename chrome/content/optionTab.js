@@ -2,13 +2,14 @@
 
 define([
     "fbtrace/trace",
+    "fbtrace/lib/dom",
     "fbtrace/lib/domplate",
     "fbtrace/lib/locale",
     "fbtrace/lib/reps",
     "fbtrace/traceOptionsController",
     "fbtrace/tree",
 ],
-function(FBTrace, Domplate, Locale, Reps, TraceOptionsController, Tree) {
+function(FBTrace, Dom, Domplate, Locale, Reps, TraceOptionsController, Tree) {
 
 // ********************************************************************************************* //
 // Constants
@@ -24,15 +25,10 @@ var timerUpdateCheckbox = -1;
 var OptionTab = domplate(Tree,
 {
     rowTag:
-        FOR("mb", "$member|getMemberAndSubMembers",
-            TAG("$mb|getMemberTag", {"member": "$mb"})
-        ),
-
-    memberTag:
         TR({"class": "memberRow $member.open", $hasChildren: "$member.value|hasChildren",
-            _repObject: "$member", level: "$member.level", "_zzzz": "$member.label", "zzzz": "$member.value.id"},
+            _repObject: "$member", level: "$member.level"},
             TD({"class": "memberLabelCell",
-                style: "padding-left: $member.indent\\px; width:1%; white-space: nowrap", _zzzz: "$member.value.id", "zzzz": "$member.value.id"},
+                style: "padding-left: $member.indent\\px; width:1%; white-space: nowrap"},
                 DIV({"class": "memberLabel $member.type\\Label"},
                     INPUT({type: "checkbox",
                         "onchange": "$onOptionChange",
@@ -53,14 +49,53 @@ var OptionTab = domplate(Tree,
         if (!optionsControllerInitialized)
             this.initOptionsController(parentNode, prefDomain);
 
-        var members = this.optionsController.getOptionsTree();
-        FBTrace.sysout("render", parentNode);
-        this.tag.replace({object: members}, parentNode);
+        // this.membersToExpand = this.optionsController.getMembersIdToExpand();
+
+        var root = this.optionsController.getOptionsTree();
+        this.tag.replace({object: root}, parentNode);
+
+        this.expandMembersRecursively(root);
 
         // If the optionsController was not initialized before calling render,
         // add the observer.
         if (!optionsControllerInitialized)
             this.optionsController.addObserver();
+    },
+
+    /**
+     * Go through the parent members and expand the items whose value "expanded" property
+     * is set to true. Called at the initialization of the optionTab to restore the
+     * collapsed / expanded state of the items.
+     *
+     * @param {item or root} parent The parent in which we go through the members.
+     */
+    expandMembersRecursively: function(parent)
+    {
+        for (let item of parent.children)
+        {
+            // item.expanded is a property that query the corresponding option in about:config
+            // @see traceOptionsController.js
+            if (item.expanded)
+            {
+                this.expandMember(item);
+                // Call the function recursively, so sub-items can be expanded.
+                this.expandMembersRecursively(item);
+            }
+        }
+    },
+
+    /**
+     * Expand a member. Called at the initialization of the Options tab.
+     * @see OptionTab.expandMembersRecursively
+     *
+     */
+    expandMember: function(item)
+    {
+        var checkbox = this.doc.getElementById(item.id);
+        var row = Dom.getAncestorByClass(checkbox, "memberRow");
+        FBTrace.sysout("expanding ", row);
+        if (row)
+            this.toggleRow(row);
     },
 
     getMembers: function(object, level)
@@ -87,19 +122,6 @@ var OptionTab = domplate(Tree,
     getMemberTag: function()
     {
         return this.memberTag;
-    },
-
-    getMemberAndSubMembers: function(member)
-    {
-        var res = [member];
-        FBTrace.sysout("getMemberAndSubMembers", member);
-        if (member.value.expanded && this.hasChildren(member.value))
-        {
-            res = res.concat(this.getMembers(member.value, member.level + 1));
-            member.open = "opened";
-        }
-        FBTrace.sysout("getMemberAndSubMembers; result", res);
-        return res;
     },
 
     initOptionsController: function(parentNode, prefDomain)
@@ -153,8 +175,9 @@ var OptionTab = domplate(Tree,
     {
         var ret = Tree.toggleRow.call(this, row);
         var member = Reps.getRepObject(row);
+        // Setting expanded to true or false updates the option value in about:config.
+        // @see traceOptionsController.js
         member.value.expanded = row.classList.contains("opened");
-        FBTrace.sysout("toggleRow; member.value.expanded = " + member.value.expanded);
         return ret;
     },
 

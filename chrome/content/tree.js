@@ -67,51 +67,60 @@ var Tree = domplate(Reps.Rep,
             this.toggleRow(row);
     },
 
-    toggleRow: function(row)
+    toggleRow: function(row, forceOpen)
     {
-        var level = parseInt(row.getAttribute("level"));
-        var target = row.lastChild.firstChild;
-        var isString = Css.hasClass(target,"objectBox-string");
-        var repObject = row.repObject;
+        if (!row)
+            return;
 
+        var member = row.repObject;
+        if (!member)
+            return;
+
+        var level = this.getRowLevel(row);
+        if (forceOpen && Css.hasClass(row, "opened"))
+            return;
+
+        // Handle child items expanding and collapsing.
         if (Css.hasClass(row, "opened"))
         {
             Css.removeClass(row, "opened");
-            if (isString)
-            {
-                var rowValue = repObject.value;
-                row.lastChild.firstChild.textContent = '"' + Str.cropMultipleLines(rowValue) + '"';
-            }
-            else
-            {
-                var tbody = row.parentNode;
-                for (var firstRow = row.nextSibling; firstRow; firstRow = row.nextSibling)
-                {
-                    if (parseInt(firstRow.getAttribute("level")) <= level)
-                        break;
 
-                    tbody.removeChild(firstRow);
-                }
+            var tbody = row.parentNode;
+            for (var firstRow = row.nextSibling; firstRow; firstRow = row.nextSibling)
+            {
+                if (this.getRowLevel(firstRow) <= level)
+                    break;
+
+                tbody.removeChild(firstRow);
             }
         }
         else
         {
+            // Do not expand if the member says there are no children.
+            if (!member.hasChildren)
+                return;
+
             Css.setClass(row, "opened");
-            if (isString)
+
+            // Get children object for the next level.
+            var members = this.getMembers(member.value, level + 1);
+
+            if (FBTrace.DBG_FBTRACE)
+                FBTrace.sysout("DomTree.toggleRow; level: " + level + ", members: " +
+                    (members ? members.length : "null"), members);
+
+            // Insert rows if they are immediately available. Otherwise set a spinner
+            // and wait for the update.
+            if (members && members.length)
             {
-                var rowValue = repObject.value;
-                row.lastChild.firstChild.textContent = '"' + rowValue + '"';
-            }
-            else
-            {
-                if (repObject)
-                {
-                    var members = this.getMembers(repObject.value, level+1);
-                    if (members)
-                        this.loop.insertRows({members: members}, row);
-                }
+                this.loop.insertRows({members: members}, row, this);
             }
         }
+    },
+
+    getRowLevel: function(row)
+    {
+        return parseInt(row.getAttribute("level"), 10);
     },
 
     getMembers: function(object, level)
