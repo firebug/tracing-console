@@ -34,6 +34,7 @@ var OptionTab = domplate(Tree,
                         "onchange": "$onOptionChange",
                         "onclick": "$onOptionClicked",
                         "_checked": "$member.value.checked",
+                        "_indeterminate": "$member.value.indeterminateChecked",
                         "id": "$member.value.id",
                     }),
                     LABEL({for: "$member.value.id"}, "$member.name")
@@ -148,17 +149,21 @@ var OptionTab = domplate(Tree,
                 do
                 {
                     parentOptionNode = doc.getElementById(parentOption.id);
-                    // parentRep.value.checked is a getter that returns true if all the children are
+                    // parentRep.value.checked and parentRep.value.indeterminateChecked
+                    // are getters that returns true if respectively all /any the children are
                     // checked.
                     parentOptionNode.checked = parentOption.checked;
+                    parentOptionNode.indeterminate = !parentOptionNode.checked &&
+                        parentOption.indeterminateChecked;
 
                     parentOption = parentOption.parent;
                 } while (parentOption && !parentOption.isRoot);
             }
             else if (timerUpdateCheckbox === -1)
             {
-                FBTrace.sysout("traceModule onPrefChange no checkbox with name " + optionName +
-                    " in parentNode; regenerate options panel", parentNode);
+                if (FBTrace.DBG_TRACE)
+                    FBTrace.sysout("traceModule onPrefChange no checkbox with name " + optionName +
+                        " in parentNode; regenerate options panel", parentNode);
 
                 timerUpdateCheckbox = setTimeout(() => {
                     timerUpdateCheckbox = -1;

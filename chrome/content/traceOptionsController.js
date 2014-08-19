@@ -151,7 +151,10 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
                         {
                             return this.children.every((child) => child.checked);
                         },
-                        command: parentCommand,
+                        get indeterminateChecked()
+                        {
+                            return this.children.some((child) => child.checked);
+                        },
                         get expanded()
                         {
                             return Options.get("expanded." + this.key) || false;
