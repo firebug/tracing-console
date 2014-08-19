@@ -534,8 +534,8 @@ DomplateTag.prototype =
         }
         catch(exc)
         {
-            // if (FBTrace.DBG_DOMPLATE)
-                /*FBTrace.sysout*/dump("renderDOM FAILS "+exc, {exc:exc, js: js});
+            if (FBTrace.DBG_DOMPLATE)
+                FBTrace.sysout("renderDOM FAILS "+exc, {exc:exc, js: js});
             var chained =  new Error("Domplate.renderDom FAILS");
             chained.cause = {exc:exc, js: js};
             throw chained;
@@ -1063,8 +1063,8 @@ var Renderer =
         }
         catch (e)
         {
-            // if (FBTrace.DBG_DOMPLATE || FBTrace.DBG_ERRORS)
-                /*FBTrace.sysout*/dump("domplate.renderHTML; EXCEPTION " + e, e);
+            if (FBTrace.DBG_DOMPLATE || FBTrace.DBG_ERRORS)
+                FBTrace.sysout("domplate.renderHTML; EXCEPTION " + e, e);
                     //{exc: e, render: this.tag.renderMarkup.toSource()});
         }
     },
