@@ -17,6 +17,7 @@ var Cu = Components.utils;
 var PrefService = Cc["@mozilla.org/preferences-service;1"];
 var prefs = PrefService.getService(Ci.nsIPrefBranch);
 var prefService = PrefService.getService(Ci.nsIPrefService);
+var EXPANDED_OPTIONS_KEY_PREFIX = "fbtrace.options.expanded.";
 
 var reDBG = /extensions\.([^\.]*)\.(DBG_.*)/;
 
@@ -118,18 +119,6 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
         var menuitems = this.getOptionsMenuItems();
         var root = {children: [], isRoot: true};
 
-        function parentCommand()
-        {
-            var wasChecked = this.checked;
-            for (var child of this.children)
-            {
-                // Toggle the children only if the parent had the same value before
-                // the user toggled it.
-                if (child.checked === wasChecked)
-                    child.command();
-            }
-        }
-
         for (var menuitem of menuitems)
         {
             var option = menuitem.key;
@@ -147,6 +136,8 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
                         label: getMenuItemLabel(key),
                         key: key,
                         children: [],
+                        id: key,
+                        parent: parent,
                         get checked()
                         {
                             return this.children.every((child) => child.checked);
@@ -157,14 +148,23 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
                         },
                         get expanded()
                         {
-                            return Options.get("expanded." + this.key) || false;
+                            return Options.get(EXPANDED_OPTIONS_KEY_PREFIX + this.key) || false;
                         },
                         set expanded(value)
                         {
-                            return Options.set("expanded." + this.key, !!value);
+                            return Options.set(EXPANDED_OPTIONS_KEY_PREFIX + this.key, !!value);
                         },
-                        id: key,
-                        parent: parent
+                        command: function()
+                        {
+                            var wasChecked = this.checked;
+                            for (var child of this.children)
+                            {
+                                // Toggle the children only if the parent had the same value before
+                                // the user toggled it.
+                                if (child.checked === wasChecked)
+                                    child.command();
+                            }
+                        },
                     };
                     parent.children.push(childParent);
                 }
