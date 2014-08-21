@@ -127,7 +127,7 @@ var OptionTab = domplate(Tree,
                 var parentOption = rep.value.parent;
                 var parentOptionNode;
                 // Also update the parent checkboxes.
-                do
+                while (parentOption && !parentOption.isRoot)
                 {
                     parentOptionNode = doc.getElementById(parentOption.id);
                     // parentRep.value.checked and parentRep.value.indeterminateChecked
@@ -139,7 +139,7 @@ var OptionTab = domplate(Tree,
                         parentOption.indeterminateChecked;
 
                     parentOption = parentOption.parent;
-                } while (parentOption && !parentOption.isRoot);
+                }
             }
             else if (timerUpdateCheckbox === -1)
             {
