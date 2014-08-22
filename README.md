@@ -10,6 +10,15 @@ License
 Tracing Console is free and open source software distributed under the
 [BSD License](https://github.com/firebug/firebug.next/blob/master/license.txt).
 
+Install
+-------
+
+1. Clone this repository in <yourPath>
+2. Add a file named fbtrace@getfirebug.com in `<devProfileFolder>/extensions` only containing '<yourPath>'
+3. Run Firefox with your dev profile and that should be it.
+
+[Read More]{https://developer.mozilla.org/en-US/docs/Mozilla/Multiple_Firefox_Profiles} about Firefox profiles
+
 Using Tracing Console
 ---------------------
 Use the following code to get reference to the console:
