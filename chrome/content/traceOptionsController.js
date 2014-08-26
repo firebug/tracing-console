@@ -17,6 +17,7 @@ var Cu = Components.utils;
 var PrefService = Cc["@mozilla.org/preferences-service;1"];
 var prefs = PrefService.getService(Ci.nsIPrefBranch);
 var prefService = PrefService.getService(Ci.nsIPrefService);
+var EXPANDED_OPTIONS_KEY_PREFIX = "fbtrace.options.expanded.";
 
 var reDBG = /extensions\.([^\.]*)\.(DBG_.*)/;
 
@@ -87,14 +88,16 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
             try
             {
                 var prefValue = Options.get(p);
-                var label = p.substr(4);
+                var key = p.substr(4);
                 items.push({
-                    label: label,
+                    label: getMenuItemLabel(key),
+                    key: key,
                     nol10n: true,
                     type: "checkbox",
                     checked: prefValue,
                     pref: p,
-                    command: Obj.bind(this.userEventToPrefEvent, this)
+                    id: p,
+                    command: this.togglePref.bind(this, p)
                 });
             }
             catch (err)
@@ -108,33 +111,94 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
             }
         }
 
-        items.sort(function(a, b)
-        {
-            return a.label > b.label;
-        });
-
         return items;
     };
 
-    // use as an event listener on UI control
-    this.userEventToPrefEvent = function(event)
+    this.getOptionsTree = function()
     {
-        var menuitem = event.target.wrappedJSObject;
-        if (!menuitem)
-            menuitem = event.target;
+        var menuitems = this.getOptionsMenuItems();
+        var root = {children: [], isRoot: true};
 
-        var label = menuitem.getAttribute("label");
-        var category = "DBG_" + label;
-        var value = Options.get(category);
+        for (var menuitem of menuitems)
+        {
+            var option = menuitem.key;
+            var curIndexOf = 0;
+            var parent = root;
+            var childParent = parent;
+            while ((curIndexOf = option.indexOf("/", curIndexOf + 1)) !== -1)
+            {
+                var key = option.substr(0, curIndexOf + 1);
+                childParent = parent.children.find((x) => x.key === key);
+
+                if (!childParent)
+                {
+                    childParent = {
+                        label: getMenuItemLabel(key),
+                        key: key,
+                        children: [],
+                        id: key,
+                        parent: parent,
+                        get checked()
+                        {
+                            return this.children.every((child) => child.checked);
+                        },
+                        get indeterminateChecked()
+                        {
+                            // Check whether there are at least one checked child and
+                            // another one unchecked.
+                            // Note: it is mandatory that there is at least one child
+                            var isFirstChecked = this.children[0].checked;
+                            for (var i = 1; i < this.children.length; i++) {
+                                // Is the state of this child different of the first one?
+                                if (isFirstChecked ^ this.children[i].checked)
+                                    return true;
+                            }
+                            return false;
+                        },
+                        get expanded()
+                        {
+                            return Options.get(EXPANDED_OPTIONS_KEY_PREFIX + this.key) || false;
+                        },
+                        set expanded(value)
+                        {
+                            return Options.set(EXPANDED_OPTIONS_KEY_PREFIX + this.key, !!value);
+                        },
+                        command: function()
+                        {
+                            var wasChecked = this.checked;
+                            for (var child of this.children)
+                            {
+                                // Toggle the children only if the parent had the same value before
+                                // the user toggled it.
+                                if (child.checked === wasChecked)
+                                    child.command();
+                            }
+                        },
+                    };
+                    parent.children.push(childParent);
+                }
+
+                parent = childParent;
+            }
+            menuitem.parent = childParent;
+            childParent.children.push(menuitem);
+        }
+        return root;
+    };
+
+    // use as an event listener on UI control
+    this.togglePref = function(pref)
+    {
+        var value = Options.get(pref);
         var newValue = !value;
 
-        Options.set(category, newValue);
+        Options.set(pref, newValue);
         prefService.savePrefFile(null);
 
         if (FBTrace.DBG_OPTIONS)
         {
             FBTrace.sysout("traceConsole.setOption: new value "+ this.prefDomain+"."+
-                category+ " = " + newValue, menuitem);
+                pref+ " = " + newValue);
         }
     };
 
@@ -154,7 +218,6 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
     this.clearOptions = function()
     {
         var optionMap = this.traceService.getTracer(prefDomain);
-        var items = [];
         for (var p in optionMap)
         {
             var m = p.indexOf("DBG_");
@@ -166,6 +229,14 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
         prefService.savePrefFile(null);
     };
 };
+
+// ********************************************************************************************* //
+// Helpers
+
+function getMenuItemLabel(key)
+{
+    return key.match(/([^\/]*)\/?$/)[1];
+}
 
 // ********************************************************************************************* //
 // Registration
