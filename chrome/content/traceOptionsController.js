@@ -146,7 +146,7 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
                         {
                             // Check whether there are at least one checked child and
                             // another one unchecked.
-                            // Note: it is mendatory that there is at least one children
+                            // Note: it is mandatory that there is at least one child
                             var isFirstChecked = this.children[0].checked;
                             for (var i = 1; i < this.children.length; i++) {
                                 // Is the state of this child different of the first one?
