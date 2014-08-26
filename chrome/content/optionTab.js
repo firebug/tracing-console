@@ -134,9 +134,9 @@ var OptionTab = domplate(Tree,
                     // are getters that returns true if respectively all / any the children are
                     // checked.
                     // Note that an item being indeterminate can't also be checked and vice-versa.
-                    parentOptionNode.checked = parentOption.checked;
-                    parentOptionNode.indeterminate = !parentOptionNode.checked &&
-                        parentOption.indeterminateChecked;
+                    var checked = parentOption.checked;
+                    parentOptionNode.checked = checked;
+                    parentOptionNode.indeterminate = !checked && parentOption.indeterminateChecked;
 
                     parentOption = parentOption.parent;
                 }

@@ -144,7 +144,16 @@ var TraceOptionsController = function(prefDomain, onPrefChangeHandler)
                         },
                         get indeterminateChecked()
                         {
-                            return this.children.some((child) => child.checked);
+                            // Check whether there are at least one checked child and
+                            // another one unchecked.
+                            // Note: it is mendatory that there is at least one children
+                            var isFirstChecked = this.children[0].checked;
+                            for (var i = 1; i < this.children.length; i++) {
+                                // Is the state of this child different of the first one?
+                                if (isFirstChecked ^ this.children[i].checked)
+                                    return true;
+                            }
+                            return false;
                         },
                         get expanded()
                         {
