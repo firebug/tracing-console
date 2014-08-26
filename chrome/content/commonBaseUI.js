@@ -51,7 +51,7 @@ var CommonBaseUI = {
             var logNode = MessageTemplate.createTable(rootNode);
 
             function recalcLayout() {
-               logTabIframe.style.height = (doc.defaultView.innerHeight - 25) + "px";
+               logTabIframe.style.height = (doc.defaultView.innerHeight - 28) + "px";
             }
 
             doc.defaultView.addEventListener("resize", function(event) {
