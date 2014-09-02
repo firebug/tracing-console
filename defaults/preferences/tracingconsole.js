@@ -8,3 +8,6 @@ pref("extensions.firebug.trace.showTime", false);
 
 // Keyboard Shortcuts
 pref("extensions.firebug.key.shortcut.openTraceConsole", "shift r");
+
+// DBG_FBTRACE
+pref("extensions.firebug.DBG_FBTRACE", false);

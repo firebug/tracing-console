@@ -4,7 +4,6 @@
 
 #panelNode-traceConsole,
 #traceLogContent {
-    overflow: hidden;
     position: absolute;
     width: 100%;
     height: 100%;
@@ -12,6 +11,9 @@
     top: 0;
     background-color: #FFFFFF;
     color: #000000;
+    overflow-x: hidden;
+    /* for the Options panel */
+    overflow-y: auto;
 }
 
 #traceLogContent {

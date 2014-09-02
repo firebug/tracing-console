@@ -3,16 +3,15 @@
 define([
     "fbtrace/trace",
     "fbtrace/globalTab",
+    "fbtrace/optionTab",
     "fbtrace/lib/menu",
     "fbtrace/lib/css",
     "fbtrace/lib/locale",
     "fbtrace/lib/options",
     "fbtrace/messageTemplate",
     "fbtrace/panelTemplate",
-    "fbtrace/traceOptionsController",
 ],
-function(FBTrace, GlobalTab, Menu, Css, Locale, Options, MessageTemplate, PanelTemplate,
-    TraceOptionsController) {
+function(FBTrace, GlobalTab, OptionTab, Menu, Css, Locale, Options, MessageTemplate, PanelTemplate) {
 
 // ********************************************************************************************* //
 // Constants
@@ -20,11 +19,6 @@ function(FBTrace, GlobalTab, Menu, Css, Locale, Options, MessageTemplate, PanelT
 var Cc = Components.classes;
 var Ci = Components.interfaces;
 var Cu = Components.utils;
-
-// ********************************************************************************************* //
-// Variables
-
-var timerUpdateButtons = -1;
 
 // ********************************************************************************************* //
 // CommonBaseUI
@@ -57,7 +51,7 @@ var CommonBaseUI = {
             var logNode = MessageTemplate.createTable(rootNode);
 
             function recalcLayout() {
-               logTabIframe.style.height = (doc.defaultView.innerHeight - 25) + "px";
+               logTabIframe.style.height = (doc.defaultView.innerHeight - 30) + "px";
             }
 
             doc.defaultView.addEventListener("resize", function(event) {
@@ -76,25 +70,8 @@ var CommonBaseUI = {
         var tabular = Options.get("fbtrace.tabularOptionsLayout");
         optionsBody.setAttribute("tabular", tabular);
 
-        this.optionsController = new TraceOptionsController(prefDomain,
-        function updateButton(optionName, optionValue)
-        {
-            var button = parentNode.ownerDocument.getElementById(optionName);
-            if (button)
-                button.setAttribute("checked", optionValue?"true":"false");
-            else if (timerUpdateButtons === -1)
-            {
-                FBTrace.sysout("traceModule onPrefChange no button with name "+optionName+
-                    " in parentNode; regenerate options panel", parentNode);
 
-                timerUpdateButtons = setTimeout(() => {
-                    timerUpdateButtons = -1;
-                    CommonBaseUI.generateOptionsButton(optionsBody);
-                });
-            }
-        });
-
-        this.generateOptionsButton(optionsBody);
+        OptionTab.render(optionsBody, prefDomain);
 
         try
         {
@@ -110,34 +87,6 @@ var CommonBaseUI = {
 
         // Select default tab.
         rep.selectTabByName(parentNode, "Logs");
-
-        this.optionsController.addObserver();
-    },
-
-    generateOptionsButton: function(optionsBody)
-    {
-        // Empty optionsBody if we regenerate the Options.
-        optionsBody.innerHTML = "";
-
-        var doc = optionsBody.ownerDocument;
-        var menuitems = this.optionsController.getOptionsMenuItems();
-        for (var i=0; i<menuitems.length; i++)
-        {
-            var menuitem = menuitems[i];
-            var button = doc.createElement("button");
-            Css.setClass(button, "traceOption");
-            Menu.setItemIntoElement(button, menuitem);
-            button.innerHTML = menuitem.label;
-            button.setAttribute("id", menuitem.pref);
-            button.removeAttribute("type");
-            button.addEventListener("click", menuitem.command, false);
-
-            var tooltip = Locale.$STR("tracing.option." + menuitem.label + "_Description");
-            if (tooltip)
-                button.setAttribute("title", tooltip);
-
-            optionsBody.appendChild(button);
-        }
     },
 };
 
