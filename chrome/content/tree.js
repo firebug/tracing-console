@@ -39,7 +39,7 @@ var Tree = domplate(Reps.Rep,
                 DIV({"class": "memberLabel $member.type\\Label"}, "$member.name")
             ),
             TD({"class": "memberValueCell", style: "width: 100%;"},
-                TAG("$member.tag", {object: "$member.value"})
+                TAG("$member.tag", {object: "$member.value", member: "$member"})
             )
         ),
 
@@ -143,10 +143,13 @@ var Tree = domplate(Reps.Rep,
             return type === "string" && value.length > 50;
     },
 
-    createMember: function(type, name, value, level)
+    createMember: function(type, name, value, level, customTag)
     {
-        var rep = Reps.getRep(value);
-        var tag = rep.shortTag ? rep.shortTag : rep.tag;
+        var tag = customTag;
+        if (!tag) {
+            var rep = Reps.getRep(value);
+            tag = rep.shortTag ? rep.shortTag : rep.tag;
+        }
 
         var hasChildren = this.hasMembers(value);
 

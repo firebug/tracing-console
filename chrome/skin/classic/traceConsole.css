@@ -447,3 +447,11 @@
 .traceInfoOptionsText[tabular="true"] .traceOption {
     width: 260px;
 }
+
+.stackFileLink {
+    white-space:nowrap;
+}
+
+.stackFileLink:hover {
+    text-decoration:underline;
+}

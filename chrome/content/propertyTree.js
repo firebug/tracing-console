@@ -44,7 +44,21 @@ var PropertyTree = domplate(Tree,
                     var p = props[i];
                     try
                     {
-                        members.push(this.createMember("dom", p, object[p], level));
+                        var customTag = null;
+                        if (p === "stack")
+                        {
+                            object[p] = this.parsStackValueStr(object[p]);
+                            customTag = this.lastStackFileName;
+                        }
+                        else if (object[p]["view"] == "lastStackUrl")
+                        {
+                            customTag = this.frameFileName;
+                            // No need any more after finding the proper tag to show
+                            // the stack file urls.
+                            delete object[p]["view"];
+                        }
+
+                        members.push(this.createMember("dom", p, object[p], level, customTag));
                     }
                     catch (e)
                     {
@@ -90,7 +104,87 @@ var PropertyTree = domplate(Tree,
         {
             return false;
         }
-    }
+    },
+
+    frameFileName:
+        A({ "class": "stackFileLink", onclick: "$onStackFileClicked" },
+            "$member.name"
+        ),
+
+    lastStackFileName:
+        A({ "class": "stackFileLink", onclick: "$onStackFileClicked" },
+            "$object|getLastStackFile"
+        ),
+
+    getLastStackFile: function (stack)
+    {
+        for (var i in stack)
+            return i;
+    },
+
+    parsStackValueStr: function (stackValue)
+    {
+        if(typeof stackValue !== "string")
+            return stackValue;
+
+        var stack = {};
+        // Each frame in stack is separated by a newline.
+        var frames = stackValue.replace(/\n+$/, "").split("\n");
+        // Reverse the array to form a stack(LIFO).
+        frames = frames.reverse();
+
+        for (var i = 0; i < frames.length; i++)
+        {
+            // Each function call into the stack is separated by (->) sign.
+            var urls = frames[i].split("->").reverse();
+            var lastUrlInfo = this.parsStackUrl(urls[0]);
+            var propertyName = lastUrlInfo.url + ":" + lastUrlInfo.lineNumber;
+            stack[propertyName] = {};
+            // Just to remember the view/template related to show the last
+            // stack url(model). It's removed after finding the related tag,
+            // see getMembers().
+            stack[propertyName]["view"] = "lastStackUrl";
+            for (var j = 0; j < urls.length; j++)
+            {
+                var fileName = urls[j];
+                stack[propertyName][fileName] = urls[j];
+            }
+        }
+        return stack;
+    },
+
+    parsStackUrl: function (url)
+    {
+        var urlInfo = {
+            url: url,
+            lineNumber: 1
+        };
+
+        // Stack frmae urls begins with a function name before at(@) sign and
+        // followed by line number and column index. More info:
+        // https://developer.mozilla.org/JavaScript/Reference/Global_Objects/Error/Stack
+        var stackUrlPattern = /^([^@]*@+)*(.+)\:(\d+)\:\d+$/;
+        if (stackUrlPattern.test(url))
+        {
+            urlInfo.url = url.replace(stackUrlPattern, "$2");
+            urlInfo.lineNumber = url.replace(stackUrlPattern, "$3");
+        }
+        return urlInfo;
+    },
+
+    onStackFileClicked: function (event)
+    {
+        var targetValue = event.target.innerHTML;
+        // file name are followed by a colon(:) and line number.
+        var url = targetValue.substr(0, targetValue.lastIndexOf(":"));
+        var lineNumber = targetValue.substr(targetValue.lastIndexOf(":") + 1);
+
+        var winType = "FBTraceConsole-SourceView";
+        window.openDialog("chrome://global/content/viewSource.xul",
+            winType, "all,dialog=no",
+            url, null, null, lineNumber, false);
+    },
+
 });
 
 // ********************************************************************************************* //
