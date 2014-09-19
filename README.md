@@ -13,7 +13,7 @@ Tracing Console is free and open source software distributed under the
 Install
 -------
 
-1. Clone this repository in <yourPath>
+1. Clone this repository in `<yourPath>`
 2. Add a file named fbtrace@getfirebug.com in `<devProfileFolder>/extensions` only containing `<yourPath>`
 3. Run Firefox with your dev profile and that should be it.
 
