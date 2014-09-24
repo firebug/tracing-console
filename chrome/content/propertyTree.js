@@ -45,20 +45,18 @@ var PropertyTree = domplate(Tree,
                     try
                     {
                         var customTag = null;
+                        var obj = object[p];
                         if (p === "stack")
                         {
-                            object[p] = this.parsStackValueStr(object[p]);
+                            obj = this.parseStackValueStr(obj);
                             customTag = this.lastStackFileName;
                         }
-                        else if (object[p]["view"] == "lastStackUrl")
+                        else if (obj instanceof StackEntry)
                         {
                             customTag = this.frameFileName;
-                            // No need any more after finding the proper tag to show
-                            // the stack file urls.
-                            delete object[p]["view"];
                         }
 
-                        members.push(this.createMember("dom", p, object[p], level, customTag));
+                        members.push(this.createMember("dom", p, obj, level, customTag));
                     }
                     catch (e)
                     {
@@ -122,28 +120,24 @@ var PropertyTree = domplate(Tree,
             return i;
     },
 
-    parsStackValueStr: function (stackValue)
+    parseStackValueStr: function (stackValue)
     {
-        if(typeof stackValue !== "string")
+        if (typeof stackValue !== "string")
             return stackValue;
 
-        var stack = {};
         // Each frame in stack is separated by a newline.
         var frames = stackValue.replace(/\n+$/, "").split("\n");
         // Reverse the array to form a stack(LIFO).
         frames = frames.reverse();
 
+        var stack = new Stack();
         for (var i = 0; i < frames.length; i++)
         {
             // Each function call into the stack is separated by (->) sign.
             var urls = frames[i].split("->").reverse();
-            var lastUrlInfo = this.parsStackUrl(urls[0]);
+            var lastUrlInfo = this.parseStackUrl(urls[0]);
             var propertyName = lastUrlInfo.url + ":" + lastUrlInfo.lineNumber;
-            stack[propertyName] = {};
-            // Just to remember the view/template related to show the last
-            // stack url(model). It's removed after finding the related tag,
-            // see getMembers().
-            stack[propertyName]["view"] = "lastStackUrl";
+            stack[propertyName] = new StackEntry();
             for (var j = 0; j < urls.length; j++)
             {
                 var fileName = urls[j];
@@ -153,7 +147,7 @@ var PropertyTree = domplate(Tree,
         return stack;
     },
 
-    parsStackUrl: function (url)
+    parseStackUrl: function (url)
     {
         var urlInfo = {
             url: url,
@@ -223,6 +217,13 @@ function isObjectPrototype(obj)
     // Use duck-typing because the object probably comes from a different global.
     return !Object.getPrototypeOf(obj) && "hasOwnProperty" in obj;
 }
+
+// Helper types for showing stacks in nicer ways.
+// Constructors are deleted so as to not show up in the tree view.
+function Stack() {}
+function StackEntry() {}
+delete Stack.prototype.constructor;
+delete StackEntry.prototype.constructor;
 
 // ********************************************************************************************* //
 // Registration
