@@ -84,7 +84,7 @@ var PropertyTree = domplate(Tree,
             else if (type === "function")
                 return functionHasProperties(value);
             else
-                return type === "string" && value.length > 50;
+                return false;
         }
         catch (exc)
         {
