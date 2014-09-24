@@ -54,15 +54,16 @@ var TraceMessage = function(type, text, obj, time)
         var stack = this.obj.stack.split("\n");
         for (var i=0; i<stack.length; i++)
         {
-            var frame = stack[i].split("@");
-            if (frame.length != 2)
+            var m = /^([^@]*)@(.*)$/.exec(stack[i]);
+            if (!m)
                 continue;
-
-            var index = frame[1].lastIndexOf(":");
+            var funcName = m[1], locations = m[2].split(" -> ");
+            var loc = locations[locations.length - 1];
+            var index = loc.lastIndexOf(":");
             this.stack.push({
-                fileName: frame[1].substr(0, index),
-                lineNumber: frame[1].substr(index+1),
-                funcName: frame[0]
+                fileName: loc.substr(0, index),
+                lineNumber: loc.substr(index+1),
+                funcName: funcName
             });
         }
     }
