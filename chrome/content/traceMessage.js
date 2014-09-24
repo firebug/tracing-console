@@ -59,10 +59,10 @@ var TraceMessage = function(type, text, obj, time)
                 continue;
             var funcName = m[1], locations = m[2].split(" -> ");
             var loc = locations[locations.length - 1];
-            var index = loc.lastIndexOf(":");
+            var m2 = /^(.*?):(\d+)(?::\d+)?$/.exec(loc);
             this.stack.push({
-                fileName: loc.substr(0, index),
-                lineNumber: loc.substr(index+1),
+                fileName: m2[1],
+                lineNumber: m2[2],
                 funcName: funcName
             });
         }
