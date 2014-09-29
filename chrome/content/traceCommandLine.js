@@ -75,13 +75,15 @@ var TraceCommandLine =
         }
     },
 
-    toggleCommandLine: function()
+    toggleCommandLine: function(shouldShow)
     {
         var splitter = document.getElementById("fbTraceSplitter");
         var commandLine = document.getElementById("fbTraceCommandLine");
 
+        if (shouldShow == null)
+            shouldShow = Dom.isCollapsed(splitter);
+
         // Toggle visibility of the command line.
-        var shouldShow = Dom.isCollapsed(splitter);
         Dom.collapse(splitter, !shouldShow);
         Dom.collapse(commandLine, !shouldShow);
 
@@ -147,6 +149,14 @@ var TraceCommandLine =
     {
         while (popup.childNodes.length > 0)
             popup.removeChild(popup.lastChild);
+    },
+
+    addText: function(added)
+    {
+        var text = this.editor.getText() + "\n" + added;
+        this.editor.setText(text);
+        var len = this.editor.getCharCount();
+        this.editor.setSelection(len, len);
     },
 
     evaluate: function()

@@ -20,10 +20,12 @@ define([
     "fbtrace/propertyTree",
     "fbtrace/lib/reps",
     "fbtrace/traceModule",
+    "fbtrace/traceCommandLine",
 ],
 function(FBTrace, Events, Win, Css, Locale, Str, Options,
     Obj, System, Arr, Domplate, Dom, HelperDomplate, TraceMessage,
-    ImportedMessage, Tree, PropertyTree, Reps, TraceModule) {
+    ImportedMessage, Tree, PropertyTree, Reps, TraceModule,
+    TraceCommandLine) {
 
 with (Domplate) {
 
@@ -325,7 +327,7 @@ var MessageTemplate = domplate(Reps.Rep,
     },
 
     // Context menu
-    getContextMenuItems: function(message, target, context, repObject)
+    getContextMenuItems: function(message, target)
     {
         var items = [];
 
@@ -369,6 +371,16 @@ var MessageTemplate = domplate(Reps.Rep,
                 tooltiptext: Locale.$STR("tracing.cmd.tip.Copy Exception"),
                 nol10n: true,
                 command: Obj.bindFixed(this.onCopyException, this, message)
+            });
+        }
+
+        if (!this.hideObject(message))
+        {
+            items.push({
+                label: Locale.$STR("tracing.cmd.Use in Command Line"),
+                tooltiptext: Locale.$STR("tracing.cmd.tip.Use in Command Line"),
+                nol10n: true,
+                command: this.onUseInCommandLine.bind(this, message)
             });
         }
 
@@ -442,6 +454,14 @@ var MessageTemplate = domplate(Reps.Rep,
     onCopyException: function(message)
     {
         System.copyToClipboard(message.getException());
+    },
+
+    onUseInCommandLine: function(message)
+    {
+        TraceCommandLine.toggleCommandLine(true);
+        var global = TraceCommandLine.currentWindow;
+        global.FBTraceObj = message.getObject();
+        TraceCommandLine.addText("FBTraceObj");
     },
 
     onExpandAll: function(message)
@@ -679,17 +699,14 @@ var MessageTemplate = domplate(Reps.Rep,
         {
             this.updateInfoImpl(messageInfoBody, view, message, message.getProperties,
                 function (message, valueBox, text) {
-                    var win = messageInfoBody.ownerDocument.defaultView;
                     // xxxHonza: HTML Reps must be ported.
-                    //if (message.obj instanceof win.Element.constructor)
-                    //{
-                    //    HTMLPanel.CompleteElement.tag.replace({object: message.obj}, valueBox,
-                    //        HTMLPanel.CompleteElement);
-                    //}
-                    //else
-                    //{
-                        PropertyTree.tag.replace({object: message.obj}, valueBox, PropertyTree);
-                    //}
+                    /* var win = messageInfoBody.ownerDocument.defaultView;
+                    if (message.obj instanceof win.Element.constructor)
+                    {
+                        HTMLPanel.CompleteElement.tag.replace({object: message.obj}, valueBox,
+                            HTMLPanel.CompleteElement);
+                    } */
+                    PropertyTree.tag.replace({object: message.obj}, valueBox, PropertyTree);
                 });
         }
         else if (Css.hasClass(tab, "messageInfoExcTab"))
