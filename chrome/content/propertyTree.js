@@ -76,7 +76,7 @@ var PropertyTree = domplate(Tree,
                         // xxxHonza: there are other fields containing
                         // stack frames. Use some heuristics to recognize
                         // them.
-                        if (p === "stack")
+                        if (containsStackFrames(obj))
                         {
                             obj = this.parseStackValueStr(obj);
                             customTag = this.stackFramesTag;
@@ -221,8 +221,30 @@ function isObjectPrototype(obj)
     return !Object.getPrototypeOf(obj) && "hasOwnProperty" in obj;
 }
 
+// Figure out if the provided value is a list of stack frames.
+function containsStackFrames(value)
+{
+    if (typeof value !== "string") {
+        return false;
+    }
+
+    if (value.indexOf("resource://") != 0 &&
+        value.indexOf("main@resource://") != 0 &&
+        value.indexOf("chrome://") != 0)
+    {
+        return false;
+    }
+
+    if (value.indexOf(" -> ") == -1) {
+        return false;
+    }
+
+    return true;
+}
+
 // Helper type for 'pretty printing' stack frames
-function Stack(value) {
+function Stack(value)
+{
     this.value = value.replace(/\n+$/, "").replace("\n");
     this.frames = [];
 }
