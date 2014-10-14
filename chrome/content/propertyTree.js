@@ -245,7 +245,7 @@ function containsStackFrames(value)
 // Helper type for 'pretty printing' stack frames
 function Stack(value)
 {
-    this.value = value.replace(/\n+$/, "").replace("\n");
+    this.value = value;
     this.frames = [];
 }
 
