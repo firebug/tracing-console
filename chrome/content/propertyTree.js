@@ -13,6 +13,26 @@ with (Domplate) {
 
 var PropertyTree = domplate(Tree,
 {
+    // Display list of stack frames
+    stackFramesTag:
+        FOR("frame", "$object|getFrames",
+            A({"class": "stackFileLink", onclick: "$onStackFileClicked"},
+                "$frame|getFrameName"),
+            BR()
+        ),
+
+    // Original stack frame value (using multi URL -> syntax per frame)
+    stackValueTag:
+        DIV({"style": "white-space: pre-wrap;"}, "$object"),
+
+    getFrames: function(stack) {
+        return stack.frames;
+    },
+
+    getFrameName: function(frame) {
+        return frame;
+    },
+
     getMembers: function(object, level)
     {
         if (!level)
@@ -29,12 +49,18 @@ var PropertyTree = domplate(Tree,
                 {
                     try
                     {
-                        members.push(self.createMember("dom", String(key), value, level));
+                        members.push(self.createMember("dom", String(key),
+                            value, level));
                     }
                     catch (e)
                     {
                     }
                 });
+            }
+            else if (object instanceof Stack)
+            {
+                members.push(this.createMember("dom", "value", object.value,
+                    level, this.stackValueTag));
             }
             else
             {
@@ -46,17 +72,18 @@ var PropertyTree = domplate(Tree,
                     {
                         var customTag = null;
                         var obj = object[p];
+
+                        // xxxHonza: there are other fields containing
+                        // stack frames. Use some heuristics to recognize
+                        // them.
                         if (p === "stack")
                         {
                             obj = this.parseStackValueStr(obj);
-                            customTag = this.lastStackFileName;
-                        }
-                        else if (obj instanceof StackEntry)
-                        {
-                            customTag = this.frameFileName;
+                            customTag = this.stackFramesTag;
                         }
 
-                        members.push(this.createMember("dom", p, obj, level, customTag));
+                        members.push(this.createMember("dom", p, obj, level,
+                          customTag));
                     }
                     catch (e)
                     {
@@ -96,7 +123,7 @@ var PropertyTree = domplate(Tree,
             else if (type === "function")
                 return functionHasProperties(value);
             else
-                return type === "string" && value.length > 50;
+                return false;
         }
         catch (exc)
         {
@@ -104,22 +131,7 @@ var PropertyTree = domplate(Tree,
         }
     },
 
-    frameFileName:
-        A({ "class": "stackFileLink", onclick: "$onStackFileClicked" },
-            "$member.name"
-        ),
-
-    lastStackFileName:
-        A({ "class": "stackFileLink", onclick: "$onStackFileClicked" },
-            "$object|getLastStackFile"
-        ),
-
-    getLastStackFile: function (stack)
-    {
-        for (var i in stack)
-            return i;
-    },
-
+    // Parsing stack frames
     parseStackValueStr: function (stackValue)
     {
         if (typeof stackValue !== "string")
@@ -127,22 +139,14 @@ var PropertyTree = domplate(Tree,
 
         // Each frame in stack is separated by a newline.
         var frames = stackValue.replace(/\n+$/, "").split("\n");
-        // Reverse the array to form a stack(LIFO).
-        frames = frames.reverse();
-
-        var stack = new Stack();
+        var stack = new Stack(stackValue);
         for (var i = 0; i < frames.length; i++)
         {
             // Each function call into the stack is separated by (->) sign.
             var urls = frames[i].split("->").reverse();
             var lastUrlInfo = this.parseStackUrl(urls[0]);
             var propertyName = lastUrlInfo.url + ":" + lastUrlInfo.lineNumber;
-            stack[propertyName] = new StackEntry();
-            for (var j = 0; j < urls.length; j++)
-            {
-                var fileName = urls[j];
-                stack[propertyName][fileName] = urls[j];
-            }
+            stack.frames.push(propertyName);
         }
         return stack;
     },
@@ -154,7 +158,7 @@ var PropertyTree = domplate(Tree,
             lineNumber: 1
         };
 
-        // Stack frmae urls begins with a function name before at(@) sign and
+        // Stack frame urls begins with a function name before at(@) sign and
         // followed by line number and column index. More info:
         // https://developer.mozilla.org/JavaScript/Reference/Global_Objects/Error/Stack
         var stackUrlPattern = /^([^@]*@+)*(.+)\:(\d+)\:\d+$/;
@@ -178,7 +182,6 @@ var PropertyTree = domplate(Tree,
             winType, "all,dialog=no",
             url, null, null, lineNumber, false);
     },
-
 });
 
 // ********************************************************************************************* //
@@ -218,12 +221,11 @@ function isObjectPrototype(obj)
     return !Object.getPrototypeOf(obj) && "hasOwnProperty" in obj;
 }
 
-// Helper types for showing stacks in nicer ways.
-// Constructors are deleted so as to not show up in the tree view.
-function Stack() {}
-function StackEntry() {}
-delete Stack.prototype.constructor;
-delete StackEntry.prototype.constructor;
+// Helper type for 'pretty printing' stack frames
+function Stack(value) {
+    this.value = value.replace(/\n+$/, "").replace("\n");
+    this.frames = [];
+}
 
 // ********************************************************************************************* //
 // Registration
