@@ -419,7 +419,7 @@ Str.cropString = function(text, limit, alterText)
 
     // Use default limit if necessary.
     if (!limit)
-        limit = Options.get("stringCropLength");
+        limit = Options.get("fbtrace.stringCropLength");
 
     // Crop the string only if a limit is actually specified.
     if (limit <= 0)
@@ -444,7 +444,7 @@ Str.cropStringEx = function(text, limit, alterText, pivot)
 
     // Use default limit if necessary.
     if (!limit)
-        limit = Options.get("stringCropLength");
+        limit = Options.get("fbtrace.stringCropLength");
 
     // Crop the string only if a limit is actually specified.
     if (limit <= 0)
