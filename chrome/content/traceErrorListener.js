@@ -43,16 +43,46 @@ var TraceErrorListener =
         this.isObserving = false;
     },
 
+    handleErrorWithEmbeddedStack: function(obj)
+    {
+        // Special case for errors with a stack included in the message. Often
+        // these come from DevToolsUtils's makeInfallible.
+        try
+        {
+            var parts = obj.errorMessage.split("\nStack: ");
+            if (parts.length !== 2)
+                return false;
+            var msg = parts[0];
+            var stack = parts[1].split("\nLine: ")[0];
+            var fakeObj = {
+                message: msg,
+                stack: stack,
+                originalError: obj
+            };
+            FBTrace.sysout("Console Service ERROR: " + msg, fakeObj);
+            return true;
+        }
+        catch (exc)
+        {
+            // Avoid double-reporting errors, or infinite error loops.
+            return false;
+        }
+    },
+
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
     // extends consoleListener
 
     observe: function(object)
     {
-        // Query interface (to access 'flags')
-        var ScriptError = object instanceof Ci.nsIScriptError;
+        // QueryInterface (to access 'flags')
+        if (!(object instanceof Ci.nsIScriptError))
+            return;
 
         // Ignore warnings
         if (object.flags & WARNING_FLAG)
+            return;
+
+        if (this.handleErrorWithEmbeddedStack(object))
             return;
 
         var message = (object.message ? object.message : object);
