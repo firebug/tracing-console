@@ -156,7 +156,7 @@ var Tree = domplate(Reps.Rep,
         var tag = customTag;
         if (!tag) {
             var rep = Reps.getRep(value);
-            tag = rep.shortTag ? rep.shortTag : rep.tag;
+            tag = rep.tag;
         }
 
         var hasChildren = this.hasMembers(value);
