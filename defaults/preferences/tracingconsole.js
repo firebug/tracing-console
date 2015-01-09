@@ -1,5 +1,6 @@
 pref("extensions.firebug.fbtrace.tabularOptionsLayout", true);
 pref("extensions.firebug.fbtrace.layoutTimeout", 0);
+pref("extensions.firebug.fbtrace.stringCropLength", 50);
 
 // Tracing Console
 pref("extensions.firebug.alwaysOpenTraceConsole", true);

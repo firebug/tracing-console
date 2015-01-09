@@ -221,34 +221,6 @@ Reps.String = domplate(Reps.Rep,
 
 // ********************************************************************************************* //
 
-Reps.XML = domplate(Reps.Rep,
-{
-    tag: OBJECTBOX("$object|asString"),
-
-    shortTag: OBJECTBOX("$object|asShortString"),
-
-    // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-    className: "xml",
-
-    supportsObject: function(object, type)
-    {
-        return type == "xml";
-    },
-
-    asString: function(object)
-    {
-        return object.toXMLString();
-    },
-
-    asShortString: function(object)
-    {
-        return this.cropMultipleLines(this.asString(object));
-    },
-});
-
-// ********************************************************************************************* //
-
 Reps.Text = domplate(Reps.Rep,
 {
     tag: OBJECTBOX("$object"),
