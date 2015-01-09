@@ -32,8 +32,8 @@ An example:
 
 Download
 --------
-For Firebug 2: http://getfirebug.com/releases/fbtrace/2.0/
-For Firebug 3: http://getfirebug.com/releases/fbtrace/2.0/
+* For Firebug 2: http://getfirebug.com/releases/fbtrace/2.0/
+* For Firebug 3: http://getfirebug.com/releases/fbtrace/2.0/
 
 
 Further Resources
