@@ -241,14 +241,16 @@ var traceConsoleService =
         }
         catch (err)
         {
-            var props = {};
-            for (var name in obj)
-              props[name] = obj[name].toString();
-
             try {
+              var props = {};
+              for (var name in obj) {
+                props[name] = obj[name] + "";
+              }
+
               return JSON.stringify(props);
             }
             catch (err) {
+              Cu.reportError("FBTrace " + err);
               return err;
             }
         }
