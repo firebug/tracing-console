@@ -262,12 +262,13 @@ var traceConsoleService =
 
         try
         {
-            wrappedJSObject.obj = JSON.parse(obj);
+            if (typeof(obj) == "string" && obj.length > 0)
+              wrappedJSObject.obj = JSON.parse(obj);
         }
         catch (err)
         {
             data.wrappedSubject.wrappedJSObject.obj = err;
-            data.message += " (object parse ERROR)";
+            data.message += " (object parse ERROR) " + obj;
         }
 
         traceConsoleService.notifyObservers(data.wrappedSubject,
