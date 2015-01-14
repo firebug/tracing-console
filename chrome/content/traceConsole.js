@@ -261,7 +261,7 @@ var TraceConsole =
                 return;
 
             var message = new TraceMessage(messageInfo.type, data, messageInfo.obj,
-                messageInfo.time);
+                messageInfo.time, messageInfo.stack);
 
             this.initLayoutTimer();
 

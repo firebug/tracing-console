@@ -22,7 +22,7 @@ var EOF = "<br/>";
 // ********************************************************************************************* //
 // Trace Message Object
 
-var TraceMessage = function(type, text, obj, time)
+var TraceMessage = function(type, text, obj, time, stack)
 {
     this.type = type;
     this.text = text;
@@ -66,6 +66,10 @@ var TraceMessage = function(type, text, obj, time)
                 funcName: funcName
             });
         }
+    }
+    else if (stack)
+    {
+        this.stack = stack;
     }
     else
     {

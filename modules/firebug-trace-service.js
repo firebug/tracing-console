@@ -9,6 +9,7 @@ const DBG_ = "DBG_";
 const Cc = Components.classes;
 const Ci = Components.interfaces;
 const Cr = Components.results;
+const Cu = Components.utils;
 
 var EXPORTED_SYMBOLS = ["traceConsoleService"];
 
@@ -34,6 +35,21 @@ var traceConsoleService =
 
         // Listen for preferences changes. Trace Options can be changed at run time.
         prefs.addObserver("extensions", this, false);
+
+        this.onMessage = this.onMessage.bind(this);
+
+        try
+        {
+          // xxxHonza: should be unregistered at some point.
+          const gMessageManager = Cc["@mozilla.org/globalmessagemanager;1"].
+              getService(Ci.nsIMessageListenerManager);
+          gMessageManager.addMessageListener("firebug-trace-on-message",
+              this.onMessage);
+        }
+        catch (err)
+        {
+            // Global message manager is not available in child processes.
+        }
 
         if (toLogFile)
         {
@@ -72,7 +88,7 @@ var traceConsoleService =
             consoleService.logStringMessage(str);
     },
 
-    getTracer: function(prefDomain)
+    getTracer: function(prefDomain, sendSyncMessage)
     {
         if (!prefDomain)
             traceConsoleService.osOut("firebug-trace-service getTracer ERROR no prefDomain "+getStackDump());
@@ -84,14 +100,14 @@ var traceConsoleService =
         }
 
         if (!this.optionMaps[prefDomain])
-            this.optionMaps[prefDomain] = this.createManagedOptionMap(prefDomain);
+            this.optionMaps[prefDomain] = this.createManagedOptionMap(prefDomain, sendSyncMessage);
 
         return this.optionMaps[prefDomain];
     },
 
-    createManagedOptionMap: function(prefDomain)
+    createManagedOptionMap: function(prefDomain, sendSyncMessage)
     {
-        var optionMap = new TraceBase(prefDomain);
+        var optionMap = new TraceBase(prefDomain, sendSyncMessage);
 
         var branch = prefService.getBranch ( prefDomain );
         var arrayDesc = {};
@@ -141,7 +157,7 @@ var traceConsoleService =
     },
 
     // Prepare trace-object and dispatch to all observers.
-    dispatch: function(messageType, message, obj)
+    dispatch: function(messageType, message, obj, sendSyncMessage)
     {
         // Translate string object.
         if (typeof(obj) == "string") {
@@ -150,7 +166,8 @@ var traceConsoleService =
             obj = string;
         }
 
-        message = message +"";    // make sure message is a string
+        // make sure message is a string
+        message = message + "";
 
         // Create wrapper with message type info.
         var messageInfo = {
@@ -160,7 +177,7 @@ var traceConsoleService =
         };
 
         var text;
-        if (toOSConsole || toLogFile)
+        if ((toOSConsole || toLogFile) && !sendSyncMessage)
         {
             text = messageType + ": " + message + "\n";
             if (obj && "stack" in obj)
@@ -170,15 +187,92 @@ var traceConsoleService =
             }
         }
 
-        if (toOSConsole)
+        if (toOSConsole && !sendSyncMessage)
             traceConsoleService.osOut(text);
 
-        if (toLogFile)
+        if (toLogFile && !sendSyncMessage)
             writeTextToFile(this.file, text);
 
-        // Pass JS object properly through XPConnect.
+        // Otherwise pass JS object properly through XPConnect.
         var wrappedSubject = {wrappedJSObject: messageInfo};
-        traceConsoleService.notifyObservers(wrappedSubject, "firebug-trace-on-message", message);
+
+        // Dispatch to the parent process if we are tracing from
+        // the child process. Otherwise notify registered observers
+        // (observer is usually the tracing console UI).
+        if (sendSyncMessage)
+        {
+            var traceServiceFile = "firebug-trace-service.js";
+
+            var stack = [];
+            for (var frame = Components.stack, i=0; frame; frame = frame.caller, i++)
+            {
+                // Skip frames related to the tracing code.
+                var fileName = unescape(frame.filename ? frame.filename : "");
+
+                // window.dump("traceModule frame "+i+": "+fileName+"\n");
+                if (i < 2 || fileName.indexOf(traceServiceFile) != -1)
+                    continue;
+
+                var sourceLine = frame.sourceLine ? frame.sourceLine : "";
+                var lineNumber = frame.lineNumber ? frame.lineNumber : "";
+                stack.push({fileName:fileName, lineNumber:lineNumber, funcName:""});
+            }
+
+            wrappedSubject.wrappedJSObject.stack = stack;
+            wrappedSubject.wrappedJSObject.obj = this.stringify(obj);
+
+            sendSyncMessage("firebug-trace-on-message", {
+              wrappedSubject: wrappedSubject,
+              message: message
+            });
+        }
+        else
+        {
+            traceConsoleService.notifyObservers(wrappedSubject,
+                "firebug-trace-on-message", message);
+        }
+    },
+
+    stringify: function(obj)
+    {
+        try
+        {
+            return JSON.stringify(obj);
+        }
+        catch (err)
+        {
+            var props = {};
+            for (var name in obj)
+              props[name] = obj[name].toString();
+
+            try {
+              return JSON.stringify(props);
+            }
+            catch (err) {
+              return err;
+            }
+        }
+    },
+
+    onMessage: function(msg)
+    {
+        var data = msg.data;
+        var wrappedJSObject = data.wrappedSubject.wrappedJSObject;
+        var obj = wrappedJSObject.obj;
+
+        try
+        {
+            wrappedJSObject.obj = JSON.parse(obj);
+        }
+        catch (err)
+        {
+            Cu.reportError("obj: " + obj);
+            data.wrappedSubject.wrappedJSObject.obj = err;
+            data.message += " (object parse ERROR)";
+        }
+
+        traceConsoleService.notifyObservers(data.wrappedSubject,
+            "firebug-trace-on-message", data.message);
     },
 
     /* nsIObserverService */
@@ -340,9 +434,10 @@ var TraceAPI =
 
 // ************************************************************************************************
 
-var TraceBase = function(prefDomain)
+var TraceBase = function(prefDomain, sendSyncMessage)
 {
     this.prefDomain = prefDomain;
+    this.sendSyncMessage = sendSyncMessage;
 }
 
 //Derive all properties from TraceAPI
@@ -358,7 +453,7 @@ TraceBase.prototype.sysout = function(message, obj)
 
     try
     {
-        traceConsoleService.dispatch(this.prefDomain, message, obj);
+        traceConsoleService.dispatch(this.prefDomain, message, obj, this.sendSyncMessage);
     }
     catch(exc)
     {
