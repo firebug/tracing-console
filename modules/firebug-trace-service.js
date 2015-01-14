@@ -266,7 +266,6 @@ var traceConsoleService =
         }
         catch (err)
         {
-            Cu.reportError("obj: " + obj);
             data.wrappedSubject.wrappedJSObject.obj = err;
             data.message += " (object parse ERROR)";
         }
