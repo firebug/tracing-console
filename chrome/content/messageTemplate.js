@@ -516,9 +516,17 @@ var MessageTemplate = domplate(Reps.Rep,
         {
             message.type = "DBG_BTI";
         }
+        else if (message.text && message.text.indexOf("!!!!") == 0)
+        {
+            message.type = "DBG_EXCLAMATION2";
+        }
         else if (message.text && message.text.indexOf("!!!") == 0)
         {
             message.type = "DBG_EXCLAMATION";
+        }
+        else if (message.text && message.text.indexOf("---") == 0)
+        {
+            message.type = "DBG_DASH";
         }
 
         var scrollingNode = outputNodes.getScrollingNode();

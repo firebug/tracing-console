@@ -382,6 +382,14 @@
     background-color: rgb(246, 186, 186);
 }
 
+.DBG_EXCLAMATION2 {
+    background-color: rgb(41, 186, 186);
+}
+
+.DBG_DASH {
+    background-color: rgb(41, 256, 186);
+}
+
 /************************************************************************************************/
 
 #consoleToolbar toolbarbutton {
