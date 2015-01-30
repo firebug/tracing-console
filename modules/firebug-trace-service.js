@@ -268,7 +268,9 @@ var traceConsoleService =
 
         try
         {
-            if (typeof(obj) == "string" && obj.length > 0)
+          wrappedJSObject.childProcess = true;
+
+          if (typeof(obj) == "string" && obj.length > 0)
               wrappedJSObject.obj = JSON.parse(obj);
         }
         catch (err)

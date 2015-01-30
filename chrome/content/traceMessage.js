@@ -22,13 +22,14 @@ var EOF = "<br/>";
 // ********************************************************************************************* //
 // Trace Message Object
 
-var TraceMessage = function(type, text, obj, time, stack)
+var TraceMessage = function(type, text, obj, time, stack, child)
 {
     this.type = type;
     this.text = text;
     this.obj = obj;
     this.stack = [];
     this.time = time;
+    this.child = child;
 
     if (typeof(this.obj) == "function")
     {

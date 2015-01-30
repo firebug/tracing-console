@@ -528,6 +528,14 @@ var MessageTemplate = domplate(Reps.Rep,
         {
             message.type = "DBG_DASH";
         }
+        else if (message.text && message.text.indexOf("+++") == 0)
+        {
+            message.type = "DBG_PLUS";
+        }
+
+        if (message.child) {
+            message.type += " DBG_CHILDPROCESS";
+        }
 
         var scrollingNode = outputNodes.getScrollingNode();
         var scrolledToBottom = Dom.isScrolledToBottom(scrollingNode);

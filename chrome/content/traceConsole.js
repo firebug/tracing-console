@@ -257,11 +257,12 @@ var TraceConsole =
             if (!messageInfo.type)
                 messageInfo.type = "extensions.firebug";
 
-            if (messageInfo.type != this.prefDomain)
-                return;
+            // xxxHonza: log everything for now. HACK FIXME TODO
+            //if (messageInfo.type != this.prefDomain)
+            //    return;
 
             var message = new TraceMessage(messageInfo.type, data, messageInfo.obj,
-                messageInfo.time, messageInfo.stack);
+                messageInfo.time, messageInfo.stack, messageInfo.childProcess);
 
             this.initLayoutTimer();
 
