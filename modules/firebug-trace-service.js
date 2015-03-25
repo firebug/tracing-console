@@ -90,8 +90,9 @@ var traceConsoleService =
 
     getTracer: function(prefDomain, sendSyncMessage)
     {
-        if (!prefDomain)
-            traceConsoleService.osOut("firebug-trace-service getTracer ERROR no prefDomain "+getStackDump());
+        // xxxHonza: not an error any more, but should be revisited.
+        //if (!prefDomain)
+        //    traceConsoleService.osOut("firebug-trace-service getTracer ERROR no prefDomain "+getStackDump());
 
         if (this.getPref("extensions.firebug-tracing-service.DBG_toOSConsole"))
         {
