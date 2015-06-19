@@ -532,6 +532,10 @@ var MessageTemplate = domplate(Reps.Rep,
         {
             message.type = "DBG_PLUS";
         }
+        else if (message.text && message.text.indexOf("JSM") == 0)
+        {
+            message.type = "DBG_DEVTOOLS";
+        }
 
         if (message.child) {
             message.type += " DBG_CHILDPROCESS";

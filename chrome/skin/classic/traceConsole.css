@@ -397,6 +397,13 @@
     background-color: rgb(171, 164, 149);
 }
 
+.DBG_DEVTOOLS .messageBodyCol {
+    /*color: rgb(1, 154, 87);*/
+    background-image: url(chrome://fbtrace/skin/devtools.png);
+    background-repeat: no-repeat;
+    background-position: 0 3px;
+}
+
 .DBG_CHILDPROCESS .messageBodyCol {
     background-image: url(chrome://fbtrace/skin/child.png);
     background-repeat: no-repeat;

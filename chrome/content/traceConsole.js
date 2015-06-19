@@ -17,10 +17,11 @@ define([
     "fbtrace/lib/reps",
     "fbtrace/lib/menu",
     "fbtrace/traceErrorListener",
+    "fbtrace/traceDevToolsListener",
 ],
 function(FBTrace, Locale, Obj, Css, Dom, Options, Arr, Serializer, TraceMessage,
     MessageTemplate, CommonBaseUI, TraceCommandLine, TraceModule, Reps, Menu,
-    TraceErrorListener) {
+    TraceErrorListener, TraceDevToolsListener) {
 
 // ********************************************************************************************* //
 // Constants
@@ -90,6 +91,7 @@ var TraceConsole =
         window.gFindBar = document.getElementById("FindToolbar");
 
         TraceErrorListener.startObserving();
+        TraceDevToolsListener.startObserving(this);
     },
 
     initializeConsole: function()
@@ -176,6 +178,7 @@ var TraceConsole =
         }
 
         TraceErrorListener.stopObserving();
+        TraceDevToolsListener.stopObserving();
     },
 
     onCloseOpener: function()
