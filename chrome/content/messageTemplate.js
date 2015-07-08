@@ -296,9 +296,19 @@ var MessageTemplate = domplate(Reps.Rep,
         var winType = "FBTraceConsole-SourceView";
         var lineNumber = event.target.getAttribute("lineNumber");
 
-        window.openDialog("chrome://global/content/viewSource.xul",
-            winType, "all,dialog=no",
-            url, null, null, lineNumber, false);
+        if (typeof window.gViewSourceUtils != "undefined")
+        {
+            window.gViewSourceUtils.viewSource({
+              URL: url,
+              lineNumber: lineNumber
+            });
+        }
+        else
+        {
+            window.openDialog("chrome://global/content/viewSource.xul",
+                winType, "all,dialog=no",
+               url, null, null, lineNumber, false);
+        }
     },
 
     onOpenDebugger: function(event)
